@@ -10,6 +10,14 @@ We deliberately **omit** paper-specific table builders and heavy analysis script
 and only keep the code you need to reproduce model training and evaluation.
 
 ---
+## Research Questions
+Our experiments are organized around the following research questions:
+- **RQ1**: *Does incorporating multimodal attributes amplify or mitigate exposure disparities across popularity groups compared to baseline recommender systems?*
+- **RQ2**: *How does the fairness–accuracy trade-off change when models are trained with multimodal attributes versus baseline settings across different domains and architectures?*
+- **RQ3**: *Do distributional exposure metrics reveal fairness effects that remain hidden when evaluation focuses solely on traditional ranking metrics?* <br>
+The code in this repository is designed to produce the metrics needed to answer these
+questions, across both multimodal and baseline variants of the MMRec models.
+---
 
 ## Repository structure
 
