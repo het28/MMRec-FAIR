@@ -2,7 +2,7 @@
 
 Fairness in Multimodal Recommender Systems.
 
-This repository contains the **core pipeline code** used in our RecSys 2026 work:
+This repository contains the **core pipeline code** used in our Fairness in Recsys work:
 data preprocessing, dataset annotation, running MMRec models (multimodal + ID-only),
 and computing accuracy + multi-class / multi-group fairness metrics.
 
