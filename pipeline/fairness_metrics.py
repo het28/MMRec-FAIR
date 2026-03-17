@@ -1,6 +1,6 @@
 """
 Multi-group and multi-class fairness metrics for top-K recommendation.
-Designed for RecSys 2026 evaluation: exposure by group, group-conditioned nDCG by relevance class,
+Designed for fairness evaluation: exposure by group, group-conditioned nDCG by relevance class,
 variance/min-max, fairness-accuracy trade-off.
 """
 from __future__ import annotations
