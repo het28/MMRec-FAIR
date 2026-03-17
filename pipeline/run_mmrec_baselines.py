@@ -6,7 +6,7 @@ Flow:
   1) Ensure 4_mmrec/data/<dataset> has .inter (and .npy for multimodal). Run 3_data_processing if needed.
   2) Run annotate so data_annotations/ exist from repo .inter (relevance, item_groups).
   3) For each (dataset, model): run MMRec main.py → find recommend_topk/*.csv → run evaluate (fairness).
-Results go to pipeline_output/baselines/<dataset>_<model>/ (same as Elliot baselines).
+Results go to pipeline_output/baselines/<dataset>_<model>/.
 """
 from __future__ import annotations
 
