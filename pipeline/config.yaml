@@ -1,0 +1,157 @@
+# RecSys 2026 fairness evaluation pipeline
+# Evaluation: call Elliot (and RecBole) repos — no duplicate metric scripts
+# Baselines: normal datasets, same preprocessing + same rec models
+#
+# Pipeline snapshot: 2026-02 — data_* / results_* layout, multi-class/multi-group
+# aligned with Purificato et al. Minds and Machines (see LITERATURE_REVIEW.txt)
+#
+# ---------------------------------------------------------------------------
+# OUTPUT FOLDER STRUCTURE (all under pipeline_output/ for easy interpretation)
+# ---------------------------------------------------------------------------
+# pipeline_output/
+#   data_elliot/              Elliot-ready train/valid/test per dataset
+#     movielens_1m/           train.tsv, valid.tsv, test.tsv
+#     movielens_1m_normal/    baseline (normal data)
+#     lfm2k/, lfm2k_normal/, dbbook/
+#   data_recbole/             RecBole .inter files per dataset
+#     movielens_1m.inter, movielens_1m_normal.inter, lfm2k.inter, ...
+#   data_annotations/         relevance + item groups for fairness (per dataset)
+#     movielens_1m/           relevance.csv, item_groups.csv, inter.csv
+#     lfm2k/, dbbook/
+#   data_normal_raw/          downloaded normal datasets (baselines)
+#     ml-1m/, hetrec2011-lastfm-2k/
+#   results_elliot/           Elliot run outputs
+#     configs/                generated YAML configs (movielens_1m.yaml, ...)
+#     recommendations/        top-K lists per dataset_model
+#     performance/            nDCG, Recall, etc. per dataset_model
+#     logs/
+#   baselines/                all baseline evaluations (Elliot + MMRec)
+#     movielens_1m_BPRMF/, movielens_1m_BPR/, movielens_1m_LightGCN/, ...
+#   binary_fairness/          binary-only fairness metrics per run (RQ1)
+#     <dataset>_<model>/     runs_metrics.csv (binary columns only)
+#   user_fairness/            user-side fairness metrics per run (activity_tier)
+#     <dataset>_<model>/     runs_metrics.csv (user_fairness_* columns)
+#   results_recbole/          RecBole outputs (if used)
+# ---------------------------------------------------------------------------
+
+base_dir: ".."  # RecSys 2026 folder (RecSys 2026)
+repo_dir: "multimodal_ml1m_dbbook_lfm2k-main"
+data_root: "multimodal_ml1m_dbbook_lfm2k-main/4_mmrec/data"
+
+# ---------------------------------------------------------------------------
+# MULTI-CLASS ATTRIBUTES (relevance — for fairness and baselines)
+# Same definition across datasets so results are comparable.
+# ---------------------------------------------------------------------------
+multi_class:
+  name: "relevance_class"
+  levels: ["Low", "Medium", "High"]
+  # Definition per dataset (applied after core-k and split):
+  movielens_1m: "explicit"   # rating 1-2 -> Low, 3 -> Medium, 4-5 -> High
+  lfm2k: "quantiles"          # weight quantiles 33%/67% -> Low / Medium / High
+  dbbook: "binary"            # all positive -> High (or future strength)
+
+# ---------------------------------------------------------------------------
+# MULTI-GROUP ATTRIBUTES (for fairness — item- and user-side)
+# Same definition across datasets so baselines use the same groups.
+# ---------------------------------------------------------------------------
+multi_group:
+  item:
+    popularity_tier:
+      name: "popularity_tier"
+      levels: ["tail", "mid", "head"]
+      definition: "training interaction count; quantiles 33% / 67%"
+    genre:
+      name: "genre"           # ML1M: from movies.dat; LFM/DBbook: if available
+      levels: "from_data"
+  user:
+    activity_tier:
+      name: "activity_tier"
+      levels: ["low", "mid", "high"]
+      definition: "training interaction count; quantiles 33% / 67%"
+
+# Same across datasets for comparable fairness
+core_k: 5
+split_ratio: [0.8, 0.1, 0.1]  # train / valid / test (per user)
+topk_list: [5, 10, 20, 50, 100]
+popularity_quantiles: [0.33, 0.67]
+
+# ---------------------------------------------------------------------------
+# DATA SOURCES
+# Multimodal: from See the Movie, Hear the Song, Read the Book (3_data_processing)
+# Normal (baselines): download standard versions, same preprocessing
+# ---------------------------------------------------------------------------
+datasets:
+  movielens_1m:
+    inter_file: "movielens_1m.inter"
+    original_ratings: "multimodal_ml1m_dbbook_lfm2k-main/3_data_processing/ml-1m_grouplens/original_data/ratings.dat"
+    item_meta: "multimodal_ml1m_dbbook_lfm2k-main/3_data_processing/ml-1m_grouplens/original_data/movies.dat"
+    normal_download: "https://files.grouplens.org/datasets/movielens/ml-1m.zip"
+    normal_ratings_path: "pipeline_output/data_normal_raw/ml-1m/ratings.dat"
+  lfm2k:
+    inter_file: "lfm2k.inter"
+    original_ratings: "multimodal_ml1m_dbbook_lfm2k-main/3_data_processing/hetrec2011-lastfm-2k/original_data/user_artists.dat"
+    normal_download: "https://grouplens.org/datasets/hetrec-2011/"
+    normal_ratings_path: "pipeline_output/data_normal_raw/hetrec2011-lastfm-2k/user_artists.dat"
+  dbbook:
+    inter_file: "dbbook.inter"
+    normal_download: "see 3_data_processing/dbbook/readme (SWAP repo)"
+    normal_ratings_path: null
+
+# ---------------------------------------------------------------------------
+# BASELINE MODELS (Elliot CF-only; paper 4_mmrec has BPR, VBPR + multimodal)
+# BPR -> BPRMF; VBPR needs image features (skip for CF-only data). Others: common baselines.
+# ---------------------------------------------------------------------------
+baseline_models:
+  - BPRMF
+  - FunkSVD
+  - PureSVD
+  - NeuMF
+  - LightGCN
+  - ItemKNN
+
+# ---------------------------------------------------------------------------
+# MMRec (multimodal_ml1m_dbbook_lfm2k-main/4_mmrec) — run paper models, evaluate with our multi-class fairness
+# Uses same data as annotate (4_mmrec/data from 3_data_processing). Annotations must exist (run annotate first).
+# ---------------------------------------------------------------------------
+mmrec_src_dir: "multimodal_ml1m_dbbook_lfm2k-main/4_mmrec/src"
+mmrec_recommend_topk_dir: "multimodal_ml1m_dbbook_lfm2k-main/4_mmrec/src/recommend_topk"
+mmrec_models:
+  - BPR
+  - VBPR
+  - LATTICE
+  - MMGCN
+  - SLMRec
+  - FREEDOM
+  - LightGCN
+
+# ID-only baseline models (use_modality=False): same codebase, no vision/text. Run with: python run_mmrec_baselines.py --baseline
+mmrec_baseline_models:
+  - VBPR_IDOnly
+  - FREEDOM_IDOnly
+  - LATTICE_IDOnly
+  - MMGCN_IDOnly
+  - SLMRec_IDOnly
+
+mmrec_datasets:
+  - movielens_1m
+  - lfm2k
+  - dbbook
+
+# Output paths (all under pipeline_output/)
+output_root: "pipeline_output"
+data_elliot_dir: "pipeline_output/data_elliot"
+data_recbole_dir: "pipeline_output/data_recbole"
+data_annotations_dir: "pipeline_output/data_annotations"
+data_normal_raw_dir: "pipeline_output/data_normal_raw"
+results_elliot_dir: "pipeline_output/results_elliot"
+results_elliot_configs: "pipeline_output/results_elliot/configs"
+results_elliot_recommendations: "pipeline_output/results_elliot/recommendations"
+results_elliot_performance: "pipeline_output/results_elliot/performance"
+results_elliot_logs: "pipeline_output/results_elliot/logs"
+# All baseline evaluations (Elliot + MMRec) go under baselines/
+results_fairness_dir: "pipeline_output/baselines"
+# Binary fairness: same runs, binary-only columns (for RQ1) — see BINARY_FAIRNESS_DETAILS.txt
+binary_fairness_dir: "pipeline_output/binary_fairness"
+user_fairness_dir: "pipeline_output/user_fairness"
+results_recbole_dir: "pipeline_output/results_recbole"
+save_recommend_topk: true
