@@ -1,4 +1,4 @@
-# RecSys 2026 fairness evaluation pipeline
+# MMRec fairness evaluation pipeline
 # Evaluation: call Elliot (and RecBole) repos — no duplicate metric scripts
 # Baselines: normal datasets, same preprocessing + same rec models
 #
@@ -34,7 +34,7 @@
 #   results_recbole/          RecBole outputs (if used)
 # ---------------------------------------------------------------------------
 
-base_dir: ".."  # RecSys 2026 folder (RecSys 2026)
+base_dir: ".." 
 repo_dir: "multimodal_ml1m_dbbook_lfm2k-main"
 data_root: "multimodal_ml1m_dbbook_lfm2k-main/4_mmrec/data"
 
